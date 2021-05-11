@@ -1,12 +1,3 @@
-//«Chill» © Nikita Nikonov, 2021
-//License: Have it in all the holes, for free
-
-//About: Chilling static articles generator/compiler, written in a few hours
-//Performance: it does 100 articles (1500 words / 10000 symb. without MD markup) in ~50ms
-//Thank's to Igor Adamenko (https://igoradamenko.github.io/awsm.css/) & community that created "github.com/gomarkdown/markdown" package
-
-//How to use: put some markdown files into input/, run program and get index.html with all articles in one website.
-
 package main
 
 import (
