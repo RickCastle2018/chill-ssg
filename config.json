@@ -1,0 +1,22 @@
+{   
+    "avatar": "https://",
+    "name": "Nikita Nikonov",
+    "about": "",
+    "contact": "",
+    "github": "",
+    "social": [
+        {"title": "Inst", "url": "https://"}
+    ],
+    "events": [
+        {
+            "date": "as",
+            "header": "lol",
+            "markdown": "Мы делали и делали…  да https://lol.co"
+        },
+        {
+            "date": "as",
+            "header": "lol",
+            "markdown": "test.md"
+        }
+    ]
+}

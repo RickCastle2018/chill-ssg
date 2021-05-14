@@ -1,76 +1,83 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gomarkdown/markdown"
 )
 
 func main() {
 
-	//future result/stat values
-	start := time.Now()
-	var processedNumber int
+	type Event struct {
+		Date     string
+		Header   string
+		Markdown string
+		HTML     template.HTML
+	}
 
-	//create file in which will be written content
-	f, err := os.Create("index.html")
+	// Load data.json
+	type Config struct {
+		Avatar  string
+		Name    string
+		About   string
+		Contact string
+		GitHub  string
+		Social  []map[string]string
+		Events  []Event
+	}
+
+	// Load config
+	rawConfig, _ := ioutil.ReadFile("config.json")
+	cfg := Config{}
+	err := json.Unmarshal([]byte(rawConfig), &cfg)
+	if err != nil {
+		fmt.Print("Please, fill config.json. More info in README.md: ", err.Error())
+		os.Exit(0)
+	}
+
+	// Process MD
+	for i := 0; i < len(cfg.Events); i++ {
+		f, err := ioutil.ReadFile("markdown/" + cfg.Events[i].Markdown)
+		cfg.Events[i].HTML = template.HTML(string(markdown.ToHTML(f, nil, nil)))
+		if err != nil {
+			cfg.Events[i].HTML = template.HTML(string(markdown.ToHTML([]byte(cfg.Events[i].Markdown), nil, nil)))
+		}
+	}
+
+	// Render layout (index)
+	ts, err := template.ParseFiles("layout/index.html")
+	if err != nil {
+		fmt.Print("Your index.html can't be parsed: ", err.Error())
+		os.Exit(0)
+	}
+	f, err := os.Create("public/index.html")
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
-
-	//some styles
-	f.WriteString(`
-		<link rel="stylesheet" href="https://igoradamenko.github.io/awsm.css/css/awsm_theme_mischka.min.css">
-	`)
-
-	//walk through current directory & check each file
-	err = filepath.Walk("input/", func(path string, info os.FileInfo, err error) error {
-
-		//check if file extension is .md
-		if matched, err := filepath.Match("*.md", filepath.Base(path)); err != nil {
-			return err
-		} else if matched {
-
-			//read file
-			md, err := ioutil.ReadFile(path)
-			if err != nil {
-				log.Fatal("Fucked up reading file: ", err)
-			}
-
-			//translate content to html
-			output := markdown.ToHTML([]byte(md), nil, nil)
-
-			//write html into file
-			_, err = f.WriteString("<article>")
-			_, err = f.Write(output)
-			_, err = f.WriteString("</article>")
-
-			if err != nil {
-				log.Fatal("Can't write.")
-			}
-
-			//increace processed files counter
-			processedNumber++
-
-		}
-		return nil
-
-	})
+	err = ts.Execute(f, cfg)
 	if err != nil {
-		log.Fatal("Shit happens.")
+		log.Println(err.Error())
 	}
 
-	//beautiful results
-	fmt.Print("--- \n Success. \n Processed " + fmt.Sprint(processedNumber) + " files in " + fmt.Sprint(time.Since(start).Milliseconds()) + "ms. \n---")
+	// Copy static files to public and add rendered index.html
+	filepath.Walk("layout/", func(wPath string, info os.FileInfo, err error) error {
+		os.Link("layout/"+wPath, "public/"+wPath)
+		return nil
+	})
 
-	//waitin' for user to quit
-	var input string
-	fmt.Scanf("%v", &input)
+	// Push public dir to gh-pages branch
 
 }
+
+// TODO: (you can help developing)
+
+// Write err handlers
+// Write tests
+// Add configuration of input/output dirs in data.json
